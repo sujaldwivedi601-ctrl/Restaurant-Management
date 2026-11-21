@@ -3,37 +3,50 @@ import java.util.Scanner;
 
 // input helpers
 class SystemTool {
-
+    // global scanner , so don't have make a new scanner avery time when we need
+    // user input
     public static Scanner sc = new Scanner(System.in);
-
-    // Returns null when there is no more input (EOF), instead of throwing
-    public static String readLine() {
-        if (sc.hasNextLine()) {
-            return sc.nextLine();
-        }
-        return null;
-    }
 
     // Returns 1..max for a valid number, 0 otherwise. Never reads input.
     public static int isInteger(String str, int max) {
-        if (str == null) {
+        int num = 0;
+        int flg = 0;
+        if (str.equals("null") || str.equals("")) {
+            System.out.println("Empty");
             return 0;
         }
-        String s = str.trim();
-        if (s.isEmpty()) {
-            return 0;
-        }
-        try {
-            int temp = Integer.parseInt(s);
-            if (temp > 0 && temp <= max) {
-                return temp;
+        str = str.trim();
+        for (int i = 0; i < str.length(); i++) {
+            if (str.charAt(i) == '0' || str.charAt(i) == '1' || str.charAt(i) == '2' || str.charAt(i) == '3'
+                    || str.charAt(i) == '4' || str.charAt(i) == '5' || str.charAt(i) == '6' || str.charAt(i) == '7'
+                    || str.charAt(i) == '8' || str.charAt(i) == '9') {
+                flg = 1;
+            } else {
+                flg = 0;
+                break;
+                
             }
-            return 0;
-        } catch (NumberFormatException e) {
-            return 0; // letters, decimals, oversized numbers, etc.
         }
+
+        if (flg == 1) {
+            num = Integer.parseInt(str.trim());
+            if (num <= max)
+                return num;
+            else
+                return 0;
+        } else
+            return 0;
     }
 
+    public static void Remove(Item[] arr, int arrlen, int deletOrder) {
+
+        for (int i = deletOrder; i < arrlen - 1; i++) {
+            Item temp = arr[i];
+            arr[i] = arr[i + 1];
+            arr[i + 1] = temp;
+        }
+
+    }
 }
 
 // item = key for name, price = key for price
@@ -57,7 +70,10 @@ class Hotal {
             new Item("Samosha", 20),
             new Item("Jaledi", 30)
     };
-    private ArrayList<Item> userOrder = new ArrayList<>();
+
+    // private ArrayList<Item> userOrder = new ArrayList<>();
+    private Item[] userOrder = new Item[10];
+    private int orderCount = -1;
 
     void manue() {
         System.out.println("----------- MENU -----------");
@@ -70,19 +86,25 @@ class Hotal {
     // by using this method use can order food
     void Order() {
 
-        System.out.print("What do you like to order : ");
-        String ord = SystemTool.readLine();
-        if (ord == null) {
+        // max order check
+        if (orderCount >= userOrder.length) {
+            System.out.println("Order is full.");
             return;
         }
-        ord = ord.trim();
+        System.out.print("What do you like to order : ");
+        String ord = SystemTool.sc.nextLine();
+        if (ord.equals("null") || ord.equals("")) {
+            return;
+        }
+
         int numOrd = SystemTool.isInteger(ord, menu.length); // 0 when it is a name
 
         // Search by number OR by name
         for (int i = 0; i < menu.length; i++) {
             Item it = menu[i];
             if (numOrd == i + 1 || ord.equalsIgnoreCase(it.name)) {
-                userOrder.add(it);
+                userOrder[orderCount] = it;
+                orderCount++;
                 System.out.println(it.name + " added to your order. (Rs. " + it.price + ") \n");
                 return;
             }
@@ -92,27 +114,29 @@ class Hotal {
 
     // Change yor order
     void Change() {
-        if (userOrder.isEmpty()) {
+        if (orderCount == 0) {
             System.out.println("You haven't ordered anything yet.");
             return;
         }
         System.out.println("========= Your Order ========");
-        for (int i = 0; i < userOrder.size(); i++) {
-            Item it = userOrder.get(i);
+        for (int i = 0; i < orderCount; i++) {
+            Item it = userOrder[i];
             System.out.println((i + 1) + ". " + it.name + " - Rs. " + it.price);
         }
         System.out.println("============================");
 
         System.out.print("Enter Order number to Remove : ");
-        String input = SystemTool.readLine();
-        if (input == null) {
+        String input = SystemTool.sc.nextLine();
+        if (input.equals("null")) {
             return;
         }
-        int orderNumber = SystemTool.isInteger(input, userOrder.size());
+        int orderNumber = SystemTool.isInteger(input, orderCount);
 
         if (orderNumber >= 1) {
-            Item removed = userOrder.remove(orderNumber - 1); // remove() shifts later items left
-            System.out.println(removed.name + " removed from your order.");
+            SystemTool.Remove(userOrder, orderCount, orderNumber - 1); // remove() shifts later items left
+            System.out.println(userOrder[orderNumber - 1].name + " removed from your order.");
+            userOrder[orderNumber - 1] = null;
+            orderCount--;
         } else {
             System.out.println("Invalid order number.");
         }
@@ -120,14 +144,14 @@ class Hotal {
 
     // it gives bill to the user
     void Bill() {
-        if (userOrder.isEmpty()) {
+        if (orderCount == 0) {
             System.out.println("You haven't ordered anything yet.");
             return;
         }
         int total = 0;
         System.out.println("========= Your bill ========");
-        for (int i = 0; i < userOrder.size(); i++) {
-            Item it = userOrder.get(i);
+        for (int i = 0; i < orderCount; i++) {
+            Item it = userOrder[i];
             System.out.println((i + 1) + ". " + it.name + " - Rs. " + it.price);
             total += it.price;
         }
@@ -140,7 +164,7 @@ class Hotal {
 public class Hotelmanagement {
     public static void main(String[] args) {
         Hotal vater = new Hotal();
-        String chose = "";
+        String chose = null;
 
         System.out.println("==================================");
         System.out.println("WELCOME TO OUR HOTEL");
@@ -153,9 +177,10 @@ public class Hotelmanagement {
             System.out.println("4. change Order");
             System.out.println("5. Exit");
             System.out.print("\nEnter your chose : ");
-            chose = SystemTool.readLine();
-            if (chose == null) {
-                break; // input ended
+            chose = SystemTool.sc.nextLine();
+            if (chose.equals("null") || chose.equals("")) {
+                System.out.println("wrong input Plese try agen..");
+                continue;
             }
             chose = chose.trim();
             int numvalue = SystemTool.isInteger(chose, 5);
